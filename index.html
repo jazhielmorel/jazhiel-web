@@ -737,6 +737,10 @@ html,body{overflow-x:clip}
 .ferr{color:#C6202C;font-size:.9rem;min-height:1.2em;margin:.6rem 0 0}
 .qh.small{font-size:.8rem;margin-top:.8rem}
 #qs-f .btn{margin-top:.4rem}
+#qs-f{position:relative}
+.consent{display:flex;gap:.6rem;align-items:flex-start;font-size:.88rem;line-height:1.5;color:var(--muted);margin:1rem 0 .2rem;cursor:pointer}
+.consent input{width:auto;margin-top:.25rem;accent-color:#C6202C;flex:none}
+.consent a{color:inherit;text-decoration:underline}
 .talks-card{background:#151619;color:#F4F5F7;display:flex;flex-direction:column;justify-content:flex-end;padding:2.2rem;min-height:15rem;position:relative;overflow:hidden}
 .talks-card::before{content:"";position:absolute;left:2.2rem;top:2.2rem;width:2.4rem;height:3px;background:#C6202C}
 .talks-card .tk{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,245,247,.6)}
@@ -1024,9 +1028,11 @@ html,body{overflow-x:clip}
           <select id="fact" required><option value="">Elige uno</option><option value="c">Menos de RD$1 millón</option><option value="a">De RD$1 a 10 millones</option><option value="a">De RD$10 a 50 millones</option><option value="a">Más de RD$50 millones</option></select></div></div>
           <label class="fl" for="abierta">¿Qué te gustaría que dejara de depender de ti? <i>(opcional)</i></label>
           <textarea id="abierta" rows="3"></textarea>
+          <label class="consent"><input type="checkbox" id="ok" required> <span>Acepto que Jazhiel Morel use estos datos para enviarme el resultado y contactarme sobre él, según el <a href="/privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>.</span></label>
+          <input type="text" id="hp" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
           <p class="ferr" id="ferr" aria-live="polite"></p>
-          <button class="btn red" type="submit">Ver mi resultado por área</button>
-          <p class="qh small">Tus respuestas no se guardan en esta página. Solo me llegan si decides enviármelas por correo.</p>
+          <button class="btn red" type="submit" id="fsend">Ver mi resultado por área</button>
+          <p class="qh small">También te envío el resultado completo a tu correo. No vendo ni cedo tus datos.</p>
         </form>
         <div class="qs" id="qs-d" hidden>
           <p class="kicker">Tu resultado por área</p>
@@ -1136,7 +1142,7 @@ html,body{overflow-x:clip}
       <div><h4>Recursos</h4><ul><li><a href="#preguntas">Preguntas frecuentes</a></li><li><a href="https://jazhielmorel.substack.com/" target="_blank" rel="noopener">Boletín cada dos semanas</a></li><li><a href="https://jazhielmorel.substack.com/p/salio-bien-y-eso-que-prueba" target="_blank" rel="noopener">Salió bien. ¿Y eso qué prueba?</a></li></ul></div>
       <div><h4>Contacto</h4><ul><li><a href="https://calendar.app.google/tMt4UZNwsfNYwBi96" target="_blank" rel="noopener">Agendar 15 minutos</a></li><li><a href="mailto:contacto@jazhiel.com">contacto@jazhiel.com</a></li><li><a href="https://www.linkedin.com/in/jazhielmorel/" target="_blank" rel="noopener">LinkedIn</a></li></ul></div>
     </div>
-    <div class="fbase"><span>© 2026 Jazhiel Morel. Todos los derechos reservados.</span><span>Privacidad: esta página no guarda tus respuestas del índice ni usa cookies de seguimiento.</span></div>
+    <div class="fbase"><span>© 2026 Jazhiel Morel. Todos los derechos reservados.</span><span>Sin cookies de seguimiento. <a href="/privacidad.html" style="color:inherit">Aviso de privacidad</a></span></div>
   </div>
 </footer>
 
@@ -1193,19 +1199,22 @@ html,body{overflow-x:clip}
     var req=['nom','mail2','emp','cargo','tam','fact'],miss=req.filter(function(id){return !$(id).value.trim();});
     var mailok=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('mail2').value.trim());
     if(miss.length||!mailok){$('ferr').textContent=miss.length?'Completa los campos que faltan.':'Revisa el correo.';return;}
-    $('ferr').textContent='';detail();});
+    if(!$('ok').checked){$('ferr').textContent='Marca la casilla de aceptación para continuar.';return;}
+    $('ferr').textContent='';send();detail();});
+  function send(){if($('hp').value)return;var ar=areas(),x=idx(A),v=x<34?V[0]:(x<67?V[1]:V[2]),T=function(id){return $(id).selectedOptions[0].text;};
+    var ord=ar.map(function(s,i){return i;}).sort(function(a,b){return ar[b]-ar[a];}).slice(0,3);
+    var F={email:$('mail2').value.trim(),name:$('nom').value.trim(),company:$('emp').value.trim(),phone:$('wa').value.trim(),cargo:T('cargo'),personas:T('tam'),facturacion:T('fact'),
+      indice:String(x),nivel:v.t,areas:ar.map(function(s,i){return AR[i]+' '+s;}).join(', '),primeros_pasos:ord.map(function(i,n){return (n+1)+') '+AR[i]+': '+ACT[i];}).join(' '),abierta:$('abierta').value.trim()};
+    var fd=new FormData();Object.keys(F).forEach(function(key){fd.append('fields['+key+']',F[key]);});fd.append('ml-submit','1');fd.append('anticsrf','true');
+    try{fetch('https://assets.mailerlite.com/jsonp/2790309/forms/203941857569277890/subscribe',{method:'POST',body:fd}).catch(function(){});}catch(e){}}
   function detail(){screen('qs-d');var ar=areas(),x=idx(A);
     $('dbars').innerHTML=ar.map(function(s,i){return '<li><span>'+AR[i]+'</span><i style="--v:'+s+'%"></i><b>'+s+'</b></li>';}).join('');
     var ord=ar.map(function(s,i){return i;}).sort(function(a,b){return ar[b]-ar[a];}).slice(0,3);
     $('dacts').innerHTML='<h4>Por dónde empezar</h4><ul>'+ord.map(function(i){return '<li><b>'+AR[i]+'</b><span>'+ACT[i]+'</span></li>';}).join('')+'</ul>';
     var c=$('cargo').value,t=$('tam').value,f=$('fact').value,T=function(id){return $(id).selectedOptions[0].text;};
-    var body=['Hola Jazhiel,','','Hice el índice de dependencia en tu web.','Índice: '+x+' de 100','Por área: '+ar.map(function(s,i){return AR[i]+' '+s;}).join(', '),'',
-      'Nombre: '+$('nom').value,'Correo: '+$('mail2').value,'WhatsApp: '+($('wa').value||'-'),'Empresa: '+$('emp').value,'Cargo: '+T('cargo'),'Personas: '+T('tam'),'Facturación mensual: '+T('fact'),'',
-      'Lo que me gustaría que dejara de depender de mí: '+($('abierta').value||'-')].join('\r\n');
-    var href='mailto:contacto@jazhiel.com?subject='+encodeURIComponent('Índice de dependencia')+'&body='+encodeURIComponent(body);
     var good=(c==='a'||c==='b')&&(t==='a'||t==='b'||f==='a');
-    $('fitout').innerHTML=good?'<div class="box yes"><b>Tu caso encaja con lo que hago.</b><p>Si quieres, revisamos tu resultado juntos en una llamada de 15 minutos, sin costo. También puedes enviarme tus respuestas por correo.</p><a class="btn red" href="'+'https://calendar.app.google/tMt4UZNwsfNYwBi96'+'" target="_blank" rel="noopener">Agendar 15 minutos</a> <a class="btn line" href="'+href+'">Enviarme las respuestas</a><p class="qh">Si el botón no abre tu correo, escribe a <b>contacto@jazhiel.com</b>.</p></div>'
-      :'<div class="box no"><b>Por ahora, te recomiendo empezar por el boletín.</b><p>Mi trabajo está pensado para empresas con un equipo directivo. Mientras tanto, cada dos semanas escribo sobre cómo funciona una dirección.</p><a class="btn line" href="https://jazhielmorel.substack.com/" target="_blank" rel="noopener">Suscribirme gratis</a></div>';
+    $('fitout').innerHTML=good?'<div class="box yes"><b>Tu caso encaja con lo que hago.</b><p>Te envié el resultado a tu correo. Si quieres, lo revisamos juntos en una llamada de 15 minutos, sin costo.</p><a class="btn red" href="'+'https://calendar.app.google/tMt4UZNwsfNYwBi96'+'" target="_blank" rel="noopener">Agendar 15 minutos</a><p class="qh">Si no ves el correo en unos minutos, revisa la carpeta de promociones o escribe a <b>contacto@jazhiel.com</b>.</p></div>'
+      :'<div class="box no"><b>Te envié el resultado a tu correo. Por ahora, te recomiendo empezar por el boletín.</b><p>Mi trabajo está pensado para empresas con un equipo directivo. Mientras tanto, cada dos semanas escribo sobre cómo funciona una dirección.</p><a class="btn line" href="https://jazhielmorel.substack.com/" target="_blank" rel="noopener">Suscribirme gratis</a></div>';
   }
   // invitation: after 35% scroll or 25s, once, not if the test is in view or was dismissed
   var inv=document.getElementById('invite'),seen=false;window.__inv=inv;
